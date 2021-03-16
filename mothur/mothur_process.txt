@@ -1,0 +1,131 @@
+######################
+## DATA PREPARATION ##
+
+## Set Output Directory ##
+set.dir(output=out)
+
+## Automatically Create Metadata File ##
+make.file(inputdir=data, type=gz, prefix=mg)
+rename.file(input=out/mg.paired.files, new=out/mg.files)
+
+## Join Paired-Ends and View Results Table##
+make.contigs(file=mg.files)
+summary.seqs(fasta=mg.trim.contigs.fasta)
+
+
+#####################
+## QUALITY CONTROL ##
+
+## Filter Based On Sequence Length, Base Quality, Homopolymers
+screen.seqs(fasta=mg.trim.contigs.fasta, group=mg.contigs.groups, summary=mg.trim.contigs.summary, maxambig=0, maxlength=275)
+
+## Optimize Data for Computation (many seqs are duplicates) ##
+unique.seqs(fasta=mg.trim.contigs.good.fasta)
+
+## Generate Count Table and View ##
+count.seqs(name=mg.trim.contigs.good.names, group=mg.contigs.good.groups)
+
+summary.seqs(count=mg.trim.contigs.good.count_table)
+
+
+########################
+## SEQUENCE ALIGNMENT ##
+
+## Make A Customized Sequence Database for Our Sequenced Region ##
+pcr.seqs(fasta=ref/silva.bacteria/silva.bacteria.fasta, start=11894, end=25319, keepdots=F)
+rename.file(input=silva.bacteria.pcr.fasta, new=silva.v4.fasta)
+summary.seqs(fasta=silva.v4.fasta)
+
+## Align Sequences to the Customized DB ##
+align.seqs(fasta=mg.trim.contigs.good.unique.fasta, reference=silva.v4.fasta)
+summary.seqs(fasta=mg.trim.contigs.good.unique.align, count=mg.trim.contigs.good.count_table)
+
+## Length Trimming to Make Sure Sequences Overlap Same Alignment Coordinates ##
+screen.seqs(fasta=mg.trim.contigs.good.unique.align, count=mg.trim.contigs.good.count_table, summary=mg.trim.contigs.good.unique.summary, start=1968, end=11550, maxhomop=8)
+summary.seqs(fasta=current, count=current)
+
+## Filter to Remove Overhangs (both ends) ##
+filter.seqs(fasta=mg.trim.contigs.good.unique.good.align, vertical=T, trump=.)
+
+## Uniqify in Case Trimming Introduced Duplicates ##
+unique.seqs(fasta=mg.trim.contigs.good.unique.good.filter.fasta, count=mg.trim.contigs.good.good.count_table)
+
+## Denoise Sequences - Similar to ASV methods (function implements a version of Deblur) ##
+pre.cluster(fasta=mg.trim.contigs.good.unique.good.filter.unique.fasta, count=mg.trim.contigs.good.unique.good.filter.count_table, diffs=2)
+grep -c "^>" mg.trim.contigs.good.unique.good.filter.unique.precluster.fasta  
+7628 unique sequences
+
+
+#####################
+## CHIMERA REMOVAL ##
+
+## Identify Chimeras using VSEARCH's Algorithm ##
+chimera.vsearch(fasta=mg.trim.contigs.good.unique.good.filter.unique.precluster.fasta, count=mg.trim.contigs.good.unique.good.filter.unique.precluster.count_table, dereplicate=t)
+
+## Remove Sequences Identified as Chimeric ##
+remove.seqs(fasta=mg.trim.contigs.good.unique.good.filter.unique.precluster.fasta, accnos=mg.trim.contigs.good.unique.good.filter.unique.precluster.denovo.vsearch.accnos)
+summary.seqs(fasta=current, count=current)
+
+## 167613/180241 = 93% remaining (7% chimeric) ##
+
+
+##############################
+## TAXONOMIC CLASSIFICATION ##
+
+## Identify Non-Bacterial Sequences ##
+### classify.seqs command allows the user to use several different methods to assign their sequences to the taxonomy outline of their choice. Current methods include using a k-nearest neighbor consensus and Wang approach.
+### wang: calculates the probability a sequence from a given taxonomy would contain a specific kmer.
+classify.seqs(fasta=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.fasta, count=mg.trim.contigs.good.unique.good.filter.unique.precluster.denovo.vsearch.pick.count_table, reference=ref/trainset9_032012.pds.fasta, taxonomy=ref/trainset9_032012.pds.tax, cutoff=80)
+
+## Remove Non-Bacterial Sequences ##
+remove.lineage(fasta=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.fasta, count=mg.trim.contigs.good.unique.good.filter.unique.precluster.denovo.vsearch.pick.count_table, taxonomy=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pds.wang.taxonomy, taxon=Chloroplast-Mitochondria-unknown-Archaea-Eukaryota)
+summary.tax(taxonomy=current, count=current)
+
+
+###############################################
+## CALCULATE ERROR RATES FROM MOCK COMMUNITY ##
+
+## Extract Mock Sample ##
+get.groups(count=mg.trim.contigs.good.unique.good.filter.unique.precluster.denovo.vsearch.pick.pick.count_table, fasta=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.fasta, groups=Mock)
+
+## Measure Error Rates Using Mock Reference ##
+seq.error(fasta=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.fasta, count=mg.trim.contigs.good.unique.good.filter.unique.precluster.denovo.vsearch.pick.pick.pick.count_table, reference=ref/HMP_MOCK.v35.fasta, aligned=F)
+
+## Cluster Mock Sequences Into OTUs ##
+dist.seqs(fasta=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.fasta, cutoff=0.03)
+cluster(column=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.dist, count=mg.trim.contigs.good.unique.good.filter.unique.precluster.denovo.vsearch.pick.pick.pick.count_table)
+make.shared(list=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.opti_mcc.list, count=mg.trim.contigs.good.unique.good.filter.unique.precluster.denovo.vsearch.pick.pick.pick.count_table, label=0.03)
+rarefaction.single(shared=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.opti_mcc.shared)
+
+## Remove Mock Sample Before Continuing Analysis ##
+remove.groups(count=mg.trim.contigs.good.unique.good.filter.unique.precluster.denovo.vsearch.pick.pick.count_table, fasta=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.fasta, taxonomy=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pds.wang.pick.taxonomy, groups=Mock)
+
+
+####################
+## OTU CLUSTERING ##
+
+## Use Newer Method: OptiClust with Matthews Correlation Coefficient ##
+cluster.split(fasta=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.fasta, count=mg.trim.contigs.good.unique.good.filter.unique.precluster.denovo.vsearch.pick.pick.pick.count_table, taxonomy=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pds.wang.pick.pick.taxonomy, splitmethod=classify, taxlevel=4, cutoff=0.03)
+
+## Determine How Many Seqs Are In Each OTU ##
+make.shared(list=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.opti_mcc.list, count=mg.trim.contigs.good.unique.good.filter.unique.precluster.denovo.vsearch.pick.pick.pick.count_table, label=0.03)
+
+## Assign Taxonomy to Each OTU ##
+classify.otu(list=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.opti_mcc.list, count=mg.trim.contigs.good.unique.good.filter.unique.precluster.denovo.vsearch.pick.pick.pick.count_table, taxonomy=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pds.wang.pick.pick.taxonomy, label=0.03)
+
+## ASVs from pre.cluster - Deblur is a method option ##
+make.shared(count=mg.trim.contigs.good.unique.good.filter.unique.precluster.denovo.vsearch.pick.pick.pick.count_table)
+
+## Assign Taxonomy ##
+classify.otu(list=mg.trim.contigs.good.unique.good.filter.unique.precluster.denovo.vsearch.pick.pick.pick.asv.list, count=mg.trim.contigs.good.unique.good.filter.unique.precluster.denovo.vsearch.pick.pick.pick.count_table, taxonomy=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pds.wang.pick.pick.taxonomy, label=asv)
+
+## Bin sequences by Taxonomy ##
+phylotype(taxonomy=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pds.wang.pick.pick.taxonomy)
+make.shared(list=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pds.wang.pick.pick.tx.list, count=mg.trim.contigs.good.unique.good.filter.unique.precluster.denovo.vsearch.pick.pick.pick.count_table, label=1)
+classify.otu(list=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pds.wang.pick.pick.tx.list, count=mg.trim.contigs.good.unique.good.filter.unique.precluster.denovo.vsearch.pick.pick.pick.count_table, taxonomy=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pds.wang.pick.pick.taxonomy, label=1)
+
+################################
+## GENERATE PHYLOGENETIC TREE ##
+dist.seqs(fasta=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.fasta, output=lt)
+clearcut(phylip=mg.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.phylip.dist)
+

@@ -1,0 +1,105 @@
+## Import Sequence Data Into QIIME2 Artifact ##
+qiime tools import \
+  --type 'SampleData[PairedEndSequencesWithQuality]' \
+  --input-path data \
+  --input-format CasavaOneEightSingleLanePerSampleDirFmt \
+  --input-path mg-metadata.tsv \
+  --output-path demux-paired-end.qza
+  
+
+## View Metadata Table ##
+qiime metadata tabulate --m-input-file mg-metadata.tsv --o-visualization tabulated-sample-metadata.qzv
+
+
+## Visualize Quality Information ##
+qiime demux summarize --i-data demux-paired-end.qza --o-visualization demux-paired-end.qzv 
+
+
+## Join Paired-End Sequence Reads Using vsearch's merge_pairs Function ##
+qiime vsearch join-pairs --i-demultiplexed-seqs demux-paired-end.qza --o-joined-sequences demux-joined.qza
+
+qiime demux summarize --i-data demux-joined.qza --o-visualization demux-joined.qzv
+
+
+## Perform Quality Filtering ##
+qiime quality-filter q-score \
+     --i-demux demux-joined.qza \
+     --o-filtered-sequences demux-joined-filtered.qza \
+     --o-filter-stats demux-joined-filter-stats.qza
+
+
+## Generate ASVs with Deblur ##
+qiime deblur denoise-16S \
+  --i-demultiplexed-seqs demux-joined-filtered.qza \
+  --p-trim-length 250 \
+  --o-representative-sequences rep-seqs.qza \
+  --o-table table.qza \
+  --p-sample-stats \
+  --o-stats deblur-stats.qza
+  
+
+## Visualize Read Counts: Joined Reads vs Deblur ##
+qiime metadata tabulate \
+  --m-input-file demux-joined-filter-stats.qza \
+  --o-visualization demux-joined-filter-stats.qzv
+  
+qiime deblur visualize-stats \
+  --i-deblur-stats deblur-stats.qza \
+  --o-visualization deblur-stats.qzv
+  
+ 
+## Explore the ASV results ##
+qiime feature-table summarize \
+  --i-table table.qza \
+  --o-visualization table.qzv \
+  --m-sample-metadata-file mg-metadata.tsv
+
+qiime feature-table tabulate-seqs \
+  --i-data rep-seqs.qza \
+  --o-visualization rep-seqs.qzv
+
+
+## Generate A Phylogenetic Tree ##
+qiime phylogeny align-to-tree-mafft-fasttree \
+  --i-sequences rep-seqs.qza \
+  --o-alignment aligned-rep-seqs.qza \
+  --o-masked-alignment masked-aligned-rep-seqs.qza \
+  --o-tree unrooted-tree.qza \
+  --o-rooted-tree rooted-tree.qza
+  
+
+## Workflow to Generate Alpha and Beta Diversities ##
+qiime diversity core-metrics-phylogenetic \
+  --i-phylogeny rooted-tree.qza \
+  --i-table table.qza \
+  --p-sampling-depth 1301 \
+  --m-metadata-file mg-metadata.tsv \
+  --output-dir core-metrics-results
+  
+## Alpha Diversity Significance ##
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity core-metrics-results/faith_pd_vector.qza \
+  --m-metadata-file mg-metadata.tsv \
+  --o-visualization core-metrics-results/faith-pd-group-significance.qzv
+  
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity core-metrics-results/shannon_vector.qza \
+  --m-metadata-file mg-metadata.tsv \
+  --o-visualization core-metrics-results/shannon-group-significance.qzv
+  
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity core-metrics-results/evenness_vector.qza \
+  --m-metadata-file mg-metadata.tsv \
+  --o-visualization core-metrics-results/evenness-group-significance.qzv
+  
+## Assign Taxonomy ##
+wget https://data.qiime2.org/2021.2/common/gg-13-8-99-515-806-nb-classifier.qza
+
+qiime feature-classifier classify-sklearn \
+  --i-classifier gg-13-8-99-515-806-nb-classifier.qza \
+  --i-reads rep-seqs.qza \
+  --o-classification taxonomy.qza
+  
+qiime metadata tabulate \
+  --m-input-file taxonomy.qza \
+  --o-visualization taxonomy.qzv
