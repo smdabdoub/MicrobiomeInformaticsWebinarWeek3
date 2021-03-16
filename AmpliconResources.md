@@ -17,18 +17,18 @@ Methods
 Tutorials
 ---------
 - [DADA2](https://benjjneb.github.io/dada2/tutorial.html)
- - [Sample Pooling](https://benjjneb.github.io/dada2/pool.html)
- - [Psudopooling](https://benjjneb.github.io/dada2/pseudo.html)
- - [Big Data Processing](https://benjjneb.github.io/dada2/bigdata.html)
+    - [Sample Pooling](https://benjjneb.github.io/dada2/pool.html)
+    - [Psudopooling](https://benjjneb.github.io/dada2/pseudo.html)
+    - [Big Data Processing](https://benjjneb.github.io/dada2/bigdata.html)
 
 - mothur
- - [MiSeq SOP](https://mothur.org/wiki/miseq_sop/)
- - [mothur Analysis Examples](https://mothur.org/wiki/analysis_examples/)
- - [16S Microbial Analysis with mothur (extended)](https://training.galaxyproject.org/training-material/topics/metagenomics/tutorials/mothur-miseq-sop/tutorial.html)
+    - [MiSeq SOP](https://mothur.org/wiki/miseq_sop/)
+    - [mothur Analysis Examples](https://mothur.org/wiki/analysis_examples/)
+    - [16S Microbial Analysis with mothur (extended)](https://training.galaxyproject.org/training-material/topics/metagenomics/tutorials/mothur-miseq-sop/tutorial.html)
 
 - QIIME2
- - [Importing Data](https://docs.qiime2.org/2021.2/tutorials/importing/)
- - [Moving Pictures](https://docs.qiime2.org/2021.2/tutorials/moving-pictures/)
- - [Atacama Soil Microbiome](https://docs.qiime2.org/2021.2/tutorials/atacama-soils/)
- - [Paired-End Analysis](https://github.com/qiime2/docs/blob/master/source/tutorials/read-joining.rst)
+    - [Importing Data](https://docs.qiime2.org/2021.2/tutorials/importing/)
+    - [Moving Pictures](https://docs.qiime2.org/2021.2/tutorials/moving-pictures/)
+    - [Atacama Soil Microbiome](https://docs.qiime2.org/2021.2/tutorials/atacama-soils/)
+    - [Paired-End Analysis](https://github.com/qiime2/docs/blob/master/source/tutorials/read-joining.rst)
  
