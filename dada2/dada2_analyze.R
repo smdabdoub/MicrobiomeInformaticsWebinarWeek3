@@ -32,7 +32,7 @@ tic()
 out <- filterAndTrim(fwdFPs, filtFs, revFPs, filtRs, truncLen = c(240,160),
                      compress = TRUE, multithread = TRUE)
 toc()
-filt_trim_res <- tibble(SampleIDs = rownames(out), Input = out[,1], Filtered = out[,2])
+filt_trim_res <- tibble(SampleIDs = sample_ids, Input = out[,1], Filtered = out[,2])
 # display the # of reads pre- and post-filtering
 filt_trim_res
 
