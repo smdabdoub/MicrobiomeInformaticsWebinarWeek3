@@ -8,8 +8,8 @@ library(tictoc)
 ##################################
 ## RETRIEVE SEQUENCE FILE PATHS ##
 # Note: If files are stored in per-sample folders, use the 'recursive = T' parameter to list.files()
-fwdFPs <- sort(list.files(here("data"), pattern = "*.R1_001.fastq", full.names = TRUE))
-revFPs <- sort(list.files(here("data"), pattern = "*.R2_001.fastq", full.names = TRUE))
+fwdFPs <- sort(list.files(here("data"), pattern = "*.R1_001.fastq.gz", full.names = TRUE))
+revFPs <- sort(list.files(here("data"), pattern = "*.R2_001.fastq.gz", full.names = TRUE))
 
 # Extract Sample IDs from the file names by splitting on "_"
 sample_ids <- str_split_n(basename(fwdFPs), "_", n = 1)
