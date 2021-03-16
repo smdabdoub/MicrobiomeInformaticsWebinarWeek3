@@ -1,3 +1,3 @@
-Microbiome Informatics Webinar - Week3
+Microbiome Informatics Webinar - Week3 - Amplicon Sequence Processing and Ecological Statistics
 
-Resources: https://u.osu.edu/coms/webinar-resources/
+Webinar Resources: https://u.osu.edu/coms/webinar-resources/
