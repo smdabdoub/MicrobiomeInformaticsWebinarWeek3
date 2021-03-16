@@ -3,7 +3,6 @@ qiime tools import \
   --type 'SampleData[PairedEndSequencesWithQuality]' \
   --input-path data \
   --input-format CasavaOneEightSingleLanePerSampleDirFmt \
-  --input-path mg-metadata.tsv \
   --output-path demux-paired-end.qza
   
 
